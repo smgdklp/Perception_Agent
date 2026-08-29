@@ -3,6 +3,6 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="ObjectPool/ObjectPool.vcxproj" Id="faf8d713-1c3a-4653-8446-b275fd61c403" />
-  <Project Path="vision/vision.vcxproj" Id="ab491260-b077-4af4-b47c-e7593ecae177" />
+  <Project Path="vs/framepool/ObjectPool.vcxproj" Id="faf8d713-1c3a-4653-8446-b275fd61c403" />
+  <Project Path="vs/vision/vision.vcxproj" Id="ab491260-b077-4af4-b47c-e7593ecae177" />
 </Solution>

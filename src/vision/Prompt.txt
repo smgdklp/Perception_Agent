@@ -98,43 +98,8 @@ int Main(){
 wincapture直接die})
 
 
-//封装的单帧缓存类模板
-//为匹配对象池要做到每个内部缓存一样大小预留
-sturct Frame{
-int x;
-int y;
-int t;//通道数
-timestep //缓存时间戳当作特异标识
-int num；//计数，记占有量
-cv::Mat fram//}
 
 
-//特异设计的帧缓存队列池子
-//预留连续内存多个帧对象，帧对象要内部预览尺寸相同
-//GetFrame可以获取最新帧，添加计数
-//SearchFrame根据时间戳获取帧，添加计数
-//ReturnFrame释放帧，这两步操作会改变计数
-//对象通过计数判断是否可以复用帧对象
-
-//呃呃呃，动态拓展还没写，一定要释放计数！！！！不然会爆队列！！！！！
-
-class Framepool{
-private:
-//预留帧尺寸
-int _h;
-int _w;
-int _t;
-
-//池子配置
-int _framesnum；//池子缓存预留对象
-
-//池子对象
-Frame* _framecurser;//遍历池子的指针
-
-
-
-public:
-int GetFrame(Frame* curframe){
 
 
 
