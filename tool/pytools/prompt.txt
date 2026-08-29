@@ -1,0 +1,54 @@
+
+Microsoft Windows [版本 10.0.26200.9168]
+(c) Microsoft Corporation。保留所有权利。
+
+C:\Users\ThinkPad>pip list
+Package       Version
+------------- --------
+comtypes      1.4.16
+dxcam         0.3.0
+numpy         2.5.2
+opencv-python 5.0.0.93
+pillow        12.3.0
+pip           25.2
+pywin32       312
+
+C:\Users\ThinkPad>
+
+已经装的，，，，
+生成可执行代码
+
+"D:\CodingPrograms\Intergration\Screen_Capture\img"
+在该目录下创立Light_Grad
+Light_Grad内创立文件夹0.8 0.7 0.6 0.5 0.4 0.3 0.2
+
+
+重复执行20次，遍历"D:\CodingPrograms\Intergration\Screen_Capture\img"内的jpg
+	先变成单通道的亮度np
+	再压缩到0-1的，1是225最高亮度
+	按照0.8 0.7 0.6 0.5 0.4 0.3 0.2梯度阈值，小于阈值的直接为0
+	然后分别保存到文件夹0.8 0.7 0.6 0.5 0.4 0.3 0.2
+
+
+
+生成可执行代码
+
+def nomalcut(img1，img2，x)
+    x=5
+	img1，img2直接变二维明度图
+	img3={y:如果img1img2在这个位置的像素差小于x就y=225,否则y=0}
+	retrn img3
+
+def satucut(img,img2,x)
+	x=5
+	img1，img2饱和度映射到0-225二维明度图
+	img3={y:如果img1img2在这个位置的像素差小于x就y=225,否则y=0}
+	retrn img3
+重复执行20次，遍历"D:\CodingPrograms\Intergration\Screen_Capture\img"内的jpg
+	取两张图片
+	nomalcut处理，得到img3转jpg存D:\CodingPrograms\Intergration\Screen_Capture\img\Fame_cut\Light_Grad
+	satucut处理，得到img3转jpg存D:\CodingPrograms\Intergration\Screen_Capture\img\Fame_cut\satucut
+
+
+
+	

@@ -1,0 +1,164 @@
+
+//仅暴露一个命令接口，
+//commad:
+//1：input传入HWND，对象创立对应虚拟DC，完成初始化
+//2：output传入Mat指针，printwin到dc，最后把内容输出到对应mat,
+//3：output传入string，位图信息存到本地文件
+//0：死亡，内存释放
+
+//因为窗口无法缩放，故画布锁死，无法适应可变窗口
+//对象创立后不做句柄有效性认证，炸就一起死吧（（（
+
+//错误码：（六位正整数，前两位固定为01，中间两位由代表命令，后面两位开始递增）
+//（这里要整理错误码出来）
+
+class wincapture{
+public:
+wincapture();
+~wincapture(){
+（_inithbitmap放回原dc
+释放_curhbitmap
+释放DC)}
+
+int Commad(int command,void* input,void*output){
+switch(command){
+case 1://初始化
+return Init(input);
+
+
+case 2://截屏
+return Work(output);
+
+case 3://截图保存
+return Load(output);
+
+
+case 0://生命周期结束
+return Die();
+
+
+
+
+private:
+
+HWND _hwnd//缓存当前绑定窗口
+
+
+DC winDC_//缓存当前屏幕dc
+RECT rect_//缓存当前窗口尺寸
+
+DC _curDC//内存DC用于窗口渲染
+HBITMAP _inithbitmap//初始画布槽，用于回收画布句柄
+HBITMAP _curhbitmap//当前画布
+
+int Init(void* input){
+(input关联为HWND，赋值到_hwnd
+验证有效性，无效则返回010101）
+(获取当前屏幕dc缓存，
+创立空内存dc
+把屏幕dc配置注入内存dc)
+(当前内存DC的hbitmap缓存到_inithbitmap
+根据句柄获取当前窗口rect缓存到rect_，无效返回010102
+根据rect_创立画布_curhbitmap，替换放入内存dc)
+return 0;}
+
+int Work(void* output){
+(output关联为cv::Mat，四通道)
+(将_hwnd，printwin，渲染到内存dc)
+(bmp,BGRA通道，getbimap把当前画布的内容，转存到output，错误return 010201)
+
+int Load(void* output){
+(output关联为string
+win文件地址有效性认证,不指向有效文件夹或者bmp则return 010301
+(如果指向文件夹，将_hwnd，printwin，渲染到内存dc
+bmp,BGRA通道，getbimap把当前画布的内容，保存到文件夹bmp图片文件，文件名称为当前时间戳，错误return 010302)
+(如果指向一个bmp,将_hwnd，printwin，渲染到内存dc
+bmp,BGRA通道，getbimap把当前画布的内容，保存到文件夹bmp图片文件错误return 010303
+
+
+int Dead(){释放内存}
+
+
+
+
+
+
+(生成测试代码，每一步填充主要操作打印到控制台）
+
+int Main(){
+(创立一个cv::mat img四通道，预留1980*1020*4）
+(等待2秒)
+(获取当前主屏幕最上层窗口句柄hightest_hwnd
+打印对应窗口的标签头
+
+创立wincapture，把获得hightest_hwnd注入
+        void Catch(img,wincapture){work保存到img，img保存bmp到，通过win方法保存"D:\CodingPrograms\Perception_Agent\resource\test"，图片名称为当前时间戳}
+
+执行10次Catch()
+wincapture直接die})
+
+
+//封装的单帧缓存类模板
+//为匹配对象池要做到每个内部缓存一样大小预留
+sturct Frame{
+int x;
+int y;
+int t;//通道数
+timestep //缓存时间戳当作特异标识
+int num；//计数，记占有量
+cv::Mat fram//}
+
+
+//特异设计的帧缓存队列池子
+//预留连续内存多个帧对象，帧对象要内部预览尺寸相同
+//GetFrame可以获取最新帧，添加计数
+//SearchFrame根据时间戳获取帧，添加计数
+//ReturnFrame释放帧，这两步操作会改变计数
+//对象通过计数判断是否可以复用帧对象
+
+//呃呃呃，动态拓展还没写，一定要释放计数！！！！不然会爆队列！！！！！
+
+class Framepool{
+private:
+//预留帧尺寸
+int _h;
+int _w;
+int _t;
+
+//池子配置
+int _framesnum；//池子缓存预留对象
+
+//池子对象
+Frame* _framecurser;//遍历池子的指针
+
+
+
+public:
+int GetFrame(Frame* curframe){
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
