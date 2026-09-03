@@ -1,0 +1,167 @@
+
+sturct L_Frame{
+cv::Mat _img;
+timestep 时间戳；
+}
+//帧对象缓冲池，缓冲一定时间的所有帧
+//写读互斥
+
+//读：直接返回vector索引
+
+
+class PileFramePool{
+private:
+
+vector<cv>  _pool;
+
+int _head;//头帧索引
+int _size;//缓冲池大小，防止索引出界
+
+int _residue;//初始大小为_size，作为整个池子的Mat有效认证
+
+int _wrinters;//在读计数
+int _reader;//在写计数
+
+
+public:
+//写：_head+1,环形索引，然后把_head指向对象Mat覆写，在写计数+1
+//在写计数不为0则返回空指针
+//内容有效性是外部认证，故初始化直接写入后，如果_residue不为0则-1ss
+int Write(Mat* img){}
+//退写：在写计数-1
+int DeWrite(){}
+
+//读：在写计数+1，返回vector指针
+//如果_residue不为0或者在写计数不为0则返回空指针
+int Read(vector* pool){}
+//退读：在写计数-1
+int DeRead(){}
+
+
+//
+
+
+//裁剪主成分中间件
+//输入：帧差二值图
+//二值分别计算单轴的目标
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//自定义帧对象，直接存二值图再裁剪防止重复计算
+struct Matob{
+int isvaild;//有效性凭证
+cv::Mat _img;
+}
+
+//自定义帧对象队列，环形缓存
+//
+class FrameQueue{
+private:
+//配置
+int _size;//vector大小
+
+
+
+
+//维护两端标记
+int _head;
+int _tail;
+int _r_count;//在读计数
+int _w_count;//在写计数
+
+
+std::vector<Matob> _buffer;//缓存池子
+
+
+
+
+public:
+//返回最旧帧的指针，再写计数+1，如果在读计数不为0则返回null
+int GetFrame(cv::Mat* img){}
+//在写计数-1，_head和_tail计数前移，注意环形索引
+int WriteDone(){}
+
+//返回整个vector的指针，在读计数+1,如果在写计数不为0则返回null
+int GetQueue(std::vector* )
+//在读计数-1
+int ReadDone(){}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

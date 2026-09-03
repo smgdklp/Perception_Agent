@@ -65,3 +65,15 @@ public:
 int GetFrame(Frame* curframe){
 //传入一个指针，赋值为一个空闲Frame指针，只写
 int SetFrame(Frame* curframe）{
+
+
+
+
+
+
+测试代码
+
+
+
+
+

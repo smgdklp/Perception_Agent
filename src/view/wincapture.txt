@@ -1,0 +1,175 @@
+class wincaputure:IWork{
+private:
+//配置类
+condition_variable* _downer;
+mutex* _downer_lock;
+
+//
+Mat* _output
+HWND _hwnd
+int _time
+//
+Mat*_output;
+
+//内部参数
+WinDC _winDC;//缓存屏幕dc配置
+WinDC _curDC;//当前DC
+
+
+HBITMAP _initmap;//储存初始画布用来销毁释放内存
+HBITMAP _curmap;//当前画布
+
+
+bool _iswork=false
+bool _islife=ture
+
+int fps;
+
+
+//cache
+BITMAPINFO info = {0};
+std::chrono::system_clock::time_point _lasttime
+RECT _size;//缓存裁剪区域
+
+void Timer(){
+auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - _lasttime);
+int sleepMs = _time
+ - static_cast<int>(elapsed.count());
+if (sleepMs > 0) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(sleepMs));
+        }
+_last_ime = std::chrono::steady_clock::now();
+}
+
+
+
+
+
+
+
+
+
+int Capture(){
+(检查_hwnd句柄有效性)
+(获取_hwnd对于窗口的RECT)
+(_hwndprintwin到内存dc_curDC)
+}
+int Save(){
+
+(根据Rect填充info)
+GetDibits(直接把像素信息缓存到_output的cv::Mat对象
+
+
+
+}
+
+
+void Work(){
+while(_islife){
+Timer();
+Capture();
+Save();
+cv.notify()
+
+}
+
+
+
+
+
+
+}
+
+int MainWork(){
+tread t(Work);
+t.join();
+OnDie()
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+int OnInit(){
+（检查condition_variable _downer;
+mutex _downer_lock;
+
+Mat* _output
+
+HWND _hwnd
+以上配置对象是否有效）
+(_time设置为当前时间)
+（获取当前主屏幕的DC缓存到WinDC _winDC
+创建内存DC_curDC
+按照_winDC配置设置WinDC _curDC）
+
+（_curDC内画布保存到_initmap）
+（创立画布_curmap，尺寸1920*1080，替换加入_curDC)
+
+MianWork()
+}
+
+int OnDie(){
+(将_initmap放回内存DC
+释放内存DC
+释放_curdc
+)
+(释放本身所有对象内存)
+}
+
+int OnResume(){
+_iswork=ture}
+
+
+
+int OnPause(){
+_iswork=false
+
+int OnUnload(){
+_islife=false}
+
+
+public:
+
+int ILock_config(lock_config config){
+if(config.downer){_downer=config.downer}
+if(config.downer_lock){_downer_lock=downer_lock}
+}
+
+
+
+int ICache_config(cache_config config){
+if(config.output){
+_output=output}
+}
+
+
+int IWroking_cofig(wroking_cofig config)
+{if(config.type==HWND){
+HWND* p = std::any_cast<HWND>(&config.info)
+if(p){_hwnd=&config.info}}
+
+
+int ILiveing_cmd(int cmd){
+switch(cmd){
+        switch (cmd) {
+        case 0: return OnInit();      // 初始化
+        case 1: return OnPause();     // 暂停
+        case 2: return OnResume();    // 启动
+        case 3: return OnUnload();    // 卸载
+        default: return -1;           // 未知命令
+
+
+
+
+
+
+

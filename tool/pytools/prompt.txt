@@ -50,5 +50,46 @@ def satucut(img,img2,x)
 	satucut处理，得到img3转jpg存D:\CodingPrograms\Intergration\Screen_Capture\img\Fame_cut\satucut
 
 
+生成可执行代码
+def Turn01(imgpath)
+	传入一个图片地址，明度直接转化为np的01二值图，纯225/2以上变成0，以下变成1
+	返回二分np对象
+def Countmethe(img,threshold=100)
+#梯度提取主成分
+x_count=[img每个x轴求和]
+y_count=[img每个y轴求和]
+
+x_max=从x_count高位遍历第一个大于threshold的index
+x_min=从x_count低位遍历第一个大于threshold的index
+y_max=从y_count高位遍历第一个大于threshold的index
+y_min=从y_count低位遍历第一个大于threshold的index
+
+返回为RECT的四位列表对象
+
+
+遍历"D:\CodingPrograms\Perception_Agent\resource\img\Fame_cut\satucut"中的jpg
+Trun01处理后，Countmethe获得主成分RECT
+裁剪出RECT矩形部分后保存到"D:\CodingPrograms\Perception_Agent\resource\img\Fame_cut\satucut_result"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 	
