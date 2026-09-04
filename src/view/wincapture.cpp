@@ -8,7 +8,7 @@ WinCapture::WinCapture()
     , _uper_lock(nullptr)
     , _output(nullptr)
     , _hwnd(nullptr)
-    , _intervalMs(33)                       //默认约30fps
+    , _intervalMs(33)
     , _winDC(nullptr)
     , _curDC(nullptr)
     , _initmap(nullptr)
@@ -40,48 +40,85 @@ void WinCapture::Timer() {
 }
 
 int WinCapture::Capture() {
-    //检查_hwnd句柄有效性
     if (!IsWindow(_hwnd)) {
-        return 011001;
+        return 11101;
     }
 
-    //获取_hwnd对应窗口的RECT
     if (!GetWindowRect(_hwnd, &_size)) {
-        return 011005;
+        return 11105;
     }
 
     int width = _size.right - _size.left;
     int height = _size.bottom - _size.top;
     if (width <= 0 || height <= 0) {
-        return 011006;
+        return 11106;
     }
 
-    //_hwnd printwin到内存dc_curDC
     if (!PrintWindow(_hwnd, _curDC, PW_CLIENTONLY)) {
-        return 011201;
+        return 11201;
     }
 
     return 0;
 }
 
+// ✅ 终极修复：直接从 _curDC 读取像素，使用 BitBlt 复制到临时 DC
 int WinCapture::Save() {
     if (!_output) {
-        return 011204;
+        return 11204;
     }
 
     int width = _size.right - _size.left;
     int height = _size.bottom - _size.top;
+    if (width <= 0 || height <= 0) {
+        return 11106;
+    }
 
-    //根据Rect填充info
-    _info.bmiHeader.biWidth = width;
-    _info.bmiHeader.biHeight = -height;     //自顶向下
+    // 创建临时 DC 和位图
+    HDC hdcTemp = CreateCompatibleDC(_curDC);
+    if (!hdcTemp) {
+        return 11202;
+    }
+
+    HBITMAP hBmpTemp = CreateCompatibleBitmap(_curDC, width, height);
+    if (!hBmpTemp) {
+        DeleteDC(hdcTemp);
+        return 11202;
+    }
+
+    SelectObject(hdcTemp, hBmpTemp);
+
+    // ✅ 关键：用 BitBlt 从 _curDC 复制到临时 DC
+    if (!BitBlt(hdcTemp, 0, 0, width, height, _curDC, 0, 0, SRCCOPY)) {
+        DeleteObject(hBmpTemp);
+        DeleteDC(hdcTemp);
+        return 11202;
+    }
+
+    // 现在从临时位图读取像素
+    BITMAPINFO bmi = {0};
+    bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+    bmi.bmiHeader.biWidth = width;
+    bmi.bmiHeader.biHeight = -height;
+    bmi.bmiHeader.biPlanes = 1;
+    bmi.bmiHeader.biBitCount = 32;
+    bmi.bmiHeader.biCompression = BI_RGB;
+    bmi.bmiHeader.biSizeImage = 0;
 
     _output->create(height, width, CV_8UC4);
+    if (_output->empty()) {
+        DeleteObject(hBmpTemp);
+        DeleteDC(hdcTemp);
+        return 11202;
+    }
 
-    //GetDIBits直接把像素信息缓存到_output的cv::Mat对象
-    if (!GetDIBits(_curDC, _curmap, 0, height, _output->data, &_info, DIB_RGB_COLORS)) {
+    int result = GetDIBits(hdcTemp, hBmpTemp, 0, height, _output->data, &bmi, DIB_RGB_COLORS);
+
+    DeleteObject(hBmpTemp);
+    DeleteDC(hdcTemp);
+
+    if (result != height) {
         _output->release();
-        return 011202;
+        return 11202;
     }
 
     return 0;
@@ -105,13 +142,11 @@ void WinCapture::Work() {
                 continue;
             }
 
-            //广播通知消费者
             if (_downer && _downer_lock) {
                 std::lock_guard<std::mutex> lock(*_downer_lock);
                 _downer->notify_one();
             }
         } else {
-            //暂停状态，等待唤醒
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
     }
@@ -119,56 +154,50 @@ void WinCapture::Work() {
 
 int WinCapture::MainWork() {
     if (_workThread.joinable()) {
-        return 010009;
+        return 11009;
     }
 
     try {
         _workThread = std::thread(&WinCapture::Work, this);
     } catch (...) {
-        return 010007;
+        return 11007;
     }
 
     return 0;
 }
 
 int WinCapture::OnInit() {
-    //检查配置对象是否有效
     if (!_hwnd) {
-        return 011001;
+        return 11101;
     }
     if (!_output) {
-        return 010002;
+        return 11002;
     }
 
-    //_time设置为当前时间
     _lasttime = std::chrono::steady_clock::now();
 
-    //获取当前主屏幕的DC缓存到WinDC _winDC
     _winDC = GetDC(_hwnd);
     if (!_winDC) {
-        return 011002;
+        return 11102;
     }
 
-    //创建内存DC_curDC
     _curDC = CreateCompatibleDC(_winDC);
     if (!_curDC) {
         ReleaseDC(_hwnd, _winDC);
         _winDC = nullptr;
-        return 011003;
+        return 11103;
     }
 
-    //_curDC内画布保存到_initmap
     _initmap = CreateCompatibleBitmap(_winDC, 1, 1);
     if (!_initmap) {
         DeleteDC(_curDC);
         _curDC = nullptr;
         ReleaseDC(_hwnd, _winDC);
         _winDC = nullptr;
-        return 011004;
+        return 11104;
     }
     SelectObject(_curDC, _initmap);
 
-    //创立画布_curmap，尺寸1920*1080，替换加入_curDC
     _curmap = CreateCompatibleBitmap(_winDC, 1920, 1080);
     if (!_curmap) {
         DeleteObject(_initmap);
@@ -177,7 +206,7 @@ int WinCapture::OnInit() {
         _curDC = nullptr;
         ReleaseDC(_hwnd, _winDC);
         _winDC = nullptr;
-        return 011004;
+        return 11104;
     }
     SelectObject(_curDC, _curmap);
 
@@ -189,7 +218,7 @@ int WinCapture::OnInit() {
 
 int WinCapture::OnPause() {
     if (!_iswork) {
-        return 011301;
+        return 11301;
     }
     _iswork = false;
     return 0;
@@ -197,7 +226,7 @@ int WinCapture::OnPause() {
 
 int WinCapture::OnResume() {
     if (_iswork) {
-        return 011302;
+        return 11302;
     }
     _iswork = true;
     _lasttime = std::chrono::steady_clock::now();
@@ -212,16 +241,14 @@ int WinCapture::OnUnload() {
         try {
             _workThread.join();
         } catch (...) {
-            return 011402;
+            return 11402;
         }
     }
 
-    //将_initmap放回内存DC
     if (_curDC && _initmap) {
         SelectObject(_curDC, _initmap);
     }
 
-    //释放内存DC
     if (_curmap) {
         DeleteObject(_curmap);
         _curmap = nullptr;
@@ -245,7 +272,6 @@ int WinCapture::OnUnload() {
     return 0;
 }
 
-//配置槽函数实现
 int WinCapture::ILock_config(lock_config config) {
     if (config.downer) {
         _downer = config.downer;
@@ -266,42 +292,50 @@ int WinCapture::ICache_config(cache_config config) {
     if (config.output) {
         _output = reinterpret_cast<cv::Mat*>(config.output);
     }
-    if (config.input) {
-        //input预留，暂不处理
-    }
     return 0;
 }
 
 int WinCapture::IWroking_cofig(working_config config) {
     if (config.type == ConfigType::HWND) {
-        //传入HWND
         auto* p = std::any_cast<HWND>(&config.info);
         if (p) {
             _hwnd = *p;
         } else {
-            return 010004;
+            return 11004;
         }
     } else if (config.type == ConfigType::FPS) {
-        //传入fps，转化为ms保存
         auto* p = std::any_cast<int>(&config.info);
         if (p && *p > 0) {
             _fps = *p;
             _intervalMs = 1000 / _fps;
         } else {
-            return 010010;
+            return 11010;
         }
     } else {
-        return 010004;
+        return 11004;
     }
     return 0;
 }
 
 int WinCapture::IWorking_cmd(int cmd, void* input, void* output) {
-    //泛用指令接口，预留扩展
-    //cmd:
     switch (cmd) {
-   
+    case 1: {
+        if (output == nullptr) {
+            return 11003;
+        }
+        HBITMAP* hBmpOut = reinterpret_cast<HBITMAP*>(output);
+        *hBmpOut = _curmap;
+        return 0;
+    }
+    case 2: {
+        if (output == nullptr) {
+            return 11003;
+        }
+        RECT* rectOut = reinterpret_cast<RECT*>(output);
+        *rectOut = _size;
+        return 0;
+    }
     default:
-        return 010001;
+        return 11001;
     }
 }
