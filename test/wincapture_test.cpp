@@ -9,6 +9,9 @@
 #include <vector>
 
 bool SaveMatAsBmp(const std::string& filename, const cv::Mat& mat) {
+    // ❌ 删掉这行！不应该在这里调用
+    // SetProcessDPIAware();
+
     if (mat.empty() || mat.type() != CV_8UC4) {
         return false;
     }
@@ -55,6 +58,9 @@ void PrintMatInfo(const cv::Mat& mat) {
 }
 
 int main() {
+    // ✅ 关键修复：在程序最开头调用，且只调用一次
+    SetProcessDPIAware();
+
     SetConsoleOutputCP(CP_UTF8);
     std::cout << "[Main] 启动..." << std::endl;
 

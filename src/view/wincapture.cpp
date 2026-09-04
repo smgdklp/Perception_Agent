@@ -15,7 +15,11 @@ WinCapture::WinCapture()
     , _curmap(nullptr)
     , _iswork(false)
     , _islife(true)
-    , _fps(30) {
+    , _fps(30)
+    , _dpiX(96)
+    , _dpiY(96)
+    , _scaleX(1.0)
+    , _scaleY(1.0) {
     _info = { 0 };
     _info.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
     _info.bmiHeader.biPlanes = 1;
@@ -44,14 +48,37 @@ int WinCapture::Capture() {
         return 11101;
     }
 
-    if (!GetWindowRect(_hwnd, &_size)) {
+    //获取客户区尺寸（实际内容区域）
+    RECT clientRect;
+    if (!GetClientRect(_hwnd, &clientRect)) {
         return 11105;
     }
 
-    int width = _size.right - _size.left;
-    int height = _size.bottom - _size.top;
+    int width = clientRect.right - clientRect.left;
+    int height = clientRect.bottom - clientRect.top;
     if (width <= 0 || height <= 0) {
         return 11106;
+    }
+
+    // 存储客户区尺寸（用于保存）
+    _size = clientRect;
+
+    if (_curmap) {
+        BITMAP bmp;
+        GetObject(_curmap, sizeof(BITMAP), &bmp);
+        if (bmp.bmWidth != width || bmp.bmHeight != height) {
+            SelectObject(_curDC, _initmap);
+            DeleteObject(_curmap);
+            _curmap = nullptr;
+        }
+    }
+
+    if (!_curmap) {
+        _curmap = CreateCompatibleBitmap(_winDC, width, height);
+        if (!_curmap) {
+            return 11104;
+        }
+        SelectObject(_curDC, _curmap);
     }
 
     if (!PrintWindow(_hwnd, _curDC, PW_CLIENTONLY)) {
@@ -61,40 +88,22 @@ int WinCapture::Capture() {
     return 0;
 }
 
-// ✅ 终极修复：直接从 _curDC 读取像素，使用 BitBlt 复制到临时 DC
 int WinCapture::Save() {
     if (!_output) {
         return 11204;
     }
 
-    int width = _size.right - _size.left;
-    int height = _size.bottom - _size.top;
+    BITMAP bmp;
+    if (!GetObject(_curmap, sizeof(BITMAP), &bmp)) {
+        return 11202;
+    }
+
+    int width = bmp.bmWidth;
+    int height = bmp.bmHeight;
     if (width <= 0 || height <= 0) {
         return 11106;
     }
 
-    // 创建临时 DC 和位图
-    HDC hdcTemp = CreateCompatibleDC(_curDC);
-    if (!hdcTemp) {
-        return 11202;
-    }
-
-    HBITMAP hBmpTemp = CreateCompatibleBitmap(_curDC, width, height);
-    if (!hBmpTemp) {
-        DeleteDC(hdcTemp);
-        return 11202;
-    }
-
-    SelectObject(hdcTemp, hBmpTemp);
-
-    // ✅ 关键：用 BitBlt 从 _curDC 复制到临时 DC
-    if (!BitBlt(hdcTemp, 0, 0, width, height, _curDC, 0, 0, SRCCOPY)) {
-        DeleteObject(hBmpTemp);
-        DeleteDC(hdcTemp);
-        return 11202;
-    }
-
-    // 现在从临时位图读取像素
     BITMAPINFO bmi = {0};
     bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
     bmi.bmiHeader.biWidth = width;
@@ -106,15 +115,20 @@ int WinCapture::Save() {
 
     _output->create(height, width, CV_8UC4);
     if (_output->empty()) {
-        DeleteObject(hBmpTemp);
-        DeleteDC(hdcTemp);
         return 11202;
     }
 
-    int result = GetDIBits(hdcTemp, hBmpTemp, 0, height, _output->data, &bmi, DIB_RGB_COLORS);
+    HDC hdcMem = CreateCompatibleDC(nullptr);
+    if (!hdcMem) {
+        _output->release();
+        return 11202;
+    }
 
-    DeleteObject(hBmpTemp);
-    DeleteDC(hdcTemp);
+    SelectObject(hdcMem, _curmap);
+
+    int result = GetDIBits(hdcMem, _curmap, 0, height, _output->data, &bmi, DIB_RGB_COLORS);
+
+    DeleteDC(hdcMem);
 
     if (result != height) {
         _output->release();
@@ -174,6 +188,20 @@ int WinCapture::OnInit() {
         return 11002;
     }
 
+    // ✅ 获取客户区尺寸
+    RECT clientRect;
+    if (!GetClientRect(_hwnd, &clientRect)) {
+        return 11105;
+    }
+
+    int width = clientRect.right - clientRect.left;
+    int height = clientRect.bottom - clientRect.top;
+    if (width <= 0 || height <= 0) {
+        return 11106;
+    }
+
+    _size = clientRect;
+
     _lasttime = std::chrono::steady_clock::now();
 
     _winDC = GetDC(_hwnd);
@@ -198,7 +226,7 @@ int WinCapture::OnInit() {
     }
     SelectObject(_curDC, _initmap);
 
-    _curmap = CreateCompatibleBitmap(_winDC, 1920, 1080);
+    _curmap = CreateCompatibleBitmap(_winDC, width, height);
     if (!_curmap) {
         DeleteObject(_initmap);
         _initmap = nullptr;
@@ -209,6 +237,8 @@ int WinCapture::OnInit() {
         return 11104;
     }
     SelectObject(_curDC, _curmap);
+
+    std::cout << "[WinCapture] 客户区尺寸: " << width << "x" << height << std::endl;
 
     _iswork = true;
     _islife = true;
