@@ -1,0 +1,189 @@
+//一个简单通过连续帧来提取窗口运动区域的类
+//采用转化为明度二值图,简单帧差,最后每行阈值提取边界
+//因为界面问题,外界自己复验结果(((())))
+
+
+
+
+class mainpartfinder:IWork{
+
+    private:
+
+    //配置类
+condition_variable* _downer;
+mutex* _downer_lock;
+
+condition_variable* _uper;
+mutex* _uper_lock;
+
+//
+int _linght_threshold=100;//分割阈值
+int _num_threshold=50
+
+//
+Mat* _input//和上级生产者的缓存队列,因为已经
+//协议锁了,所以直接读,严格释放锁变成原子操作
+RECT* _output
+
+//内部参数
+
+bool _iswork=false
+bool _islife=ture
+
+int _cur_cmd
+_workThread
+
+//自身响应锁
+condition_variable* _thiscv;
+mutex* _thismtx;
+
+//cache
+Mat _pre;//预留1920*1080*4
+Mat _cur;
+
+Mat _linght;//帧差cache
+
+RECT _persize
+
+
+
+
+//工作函数
+//拷贝
+int GetFrame(){
+    lock(_uper_lock)
+    wait(_uper的nos)
+    直接从_input拷贝到_per
+    .unlock
+    等待20ms
+    lock(_uper_lock)
+    wait(_uper的nos)
+    拷贝到_cur
+    .unlock
+    保存 Mat _pre;Mat _cur;,分别叫init1和2
+}
+//转化为二值图
+int TurnL(){
+    Mat _pre;Mat _cur;两帧直接在原对象转化为,单通道灰度图
+    Mat _pre;Mat _cur;,分别叫L1和2
+}
+
+
+
+int Framecut(){
+    Mat _pre和Mat _cur做帧差
+    帧差结果保存到Mat _linght
+    保存Mat _linght为cuntL
+
+}
+int Threshold(){
+    Mat _linght硬二分：大于_linght_threshold的设为0，小于等于_linght_threshold的设为1
+    二值图转化为0-225二值图保存为01L
+}
+int GetMain(){
+    Mat _linght
+    (py实现,阈值取_num_threshold
+        # x轴求和（每一列的白点数量，白点=1）
+    x_count = np.sum(img == 1, axis=0)  # shape: (w,)
+    
+    # y轴求和（每一行的白点数量，白点=1）
+    y_count = np.sum(img == 1, axis=1)  # shape: (h,)
+    
+    # 从高位遍历找第一个大于threshold的index (x_max)
+    x_max = -1
+    for i in range(w - 1, -1, -1):
+        if x_count[i] > threshold:
+            x_max = i
+            break
+    
+    # 从低位遍历找第一个大于threshold的index (x_min)
+    x_min = -1
+    for i in range(w):
+        if x_count[i] > threshold:
+            x_min = i
+            break
+    
+    # 从高位遍历找第一个大于threshold的index (y_max)
+    y_max = -1
+    for i in range(h - 1, -1, -1):
+        if y_count[i] > threshold:
+            y_max = i
+            break
+    
+    # 从低位遍历找第一个大于threshold的index (y_min)
+    y_min = -1
+    for i in range(h):
+        if y_count[i] > threshold:
+            y_min = i
+            break
+    
+    # 如果没找到有效边界，返回全图范围
+    if x_min == -1 or x_max == -1 or y_min == -1 or y_max == -1:
+        print(f"⚠️ 未找到有效主成分 (threshold={threshold})，返回全图")
+        return [0, 0, w-1, h-1])
+        最后结果转化为RECT
+        返回到_output
+    最终打印rect在控制台
+}
+
+//必备生命周期函数
+int OnInit(){
+    (检查环境是否完全,只检验上层指针是否有效)
+    (new condition_variable* _thiscv;
+mutex* _thismtx;作为自身被动响应的锁对象)
+}
+int MainWork(){
+    if (_workThread.joinable())
+    创立线程Work运行
+}
+//主线循环
+void Work(){
+while(_islife){
+wait.(_thismtx)//等待自身函数调用
+if(_iswork){}
+switch(_cur_cmd){
+case 1:GetFrame()TurnL()Framecut()Threshold()GetMain();
+case 0:sleep(60)//细节睡一下再pass防止锁失效}
+
+如果存在downer,就nos通知下一级}
+_cur_cmd=0//细节复位函数
+
+
+}
+}
+
+int ICache_config()
+{缓存指针索引到_output和_input}
+
+int ILock_config(){
+    缓存到condition_variable* _downer;
+mutex* _downer_lock;
+
+condition_variable* _uper;
+mutex* _uper_lock;
+}
+
+
+//设计缺陷问题,只能采用单字典对来赋值
+int IWroking_cofig(){
+type==dict
+if<string,int>,
+{if string=="num"缓存int到
+int _num_threshold;
+if string =="linght"
+缓存int到_linght_threshold
+}
+
+}
+
+//cmd:1,执行一次主区域提取
+int IWorking_cmd(){
+    switch(cmd)
+    {
+        case 1:_cur_cmd=1
+        释放自身响应锁
+    }
+}
+int IWorking_cmd(){
+
+}

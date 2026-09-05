@@ -19,12 +19,15 @@ find_package(OpenCV REQUIRED)
 # link源代码（主程序源文件 + 测试文件）
 set(SOURCES
     src/view/wincapture.cpp
-    test/wincapture_test.cpp      # ✅ 加上测试文件！
+    #test/wincapture_test.cpp
+    test/mainpartfinder_test.cpp
+    src/view/mainpartfinder.cpp
 )
 
 set(HEADERS
     include/common.h
     include/wincapture.h
+    include/mainpartfinder.h  
 )
 
 # 生成可执行文件
