@@ -1,0 +1,101 @@
+//完整视觉部分测试代码
+
+int Main(){
+    Mat capture_ = new Mat;
+    Mat output_ = new Mat;//都预留1920*1080*4
+    RECT offset_ =RECT{0,0,0,0}
+
+    new wincapture
+    new mainpartfinder
+    new finaloutput
+    new saver1
+    new saver2
+
+    string SavePath="D:\CodingPrograms\Perception_Agent\resource\finalTest"
+
+    //配置
+    wincapture->capture_ ->finaloutput
+    finaloutput->output_->finaloutput
+    wincapture->capture_ ->saver1
+    finaloutput->output_->saver2
+
+
+    //锁配置
+    wincapture->finaloutput
+    finaloutput->finaloutput
+    finaloutput->saver2
+    wincapture->saver1
+
+
+    全部初始化且暂停
+    等待按下回车
+    等待3s
+    获取主窗口最上面的窗口句柄HWND
+    注入句柄wincapture
+    除了saver1,saver2全部开始工作
+    
+    //测试一,每层结果
+    saver1,saver2全部开始工作
+    等待3s
+    saver1,saver2停止工作
+
+    //测试二,主成分提取
+    result=new RECT[10]
+    调取MainPartFinder.IWorking_cmd(1,offset_)
+    重复十次填充到result
+    打印result
+
+    //测试三,联合
+    如果result成分不一样,遍历选区RECT区域最大的为RECT fin
+    fin注入finaloutput
+    saver1,saver2全部开始工作
+    等待3s
+    saver1,saver2停止工作
+    fin注入RECT{10,10,10,10}
+    saver1,saver2全部开始工作
+    等待3s
+    saver1,saver2停止工作
+
+
+
+    释放所有内存
+
+}
+
+class Saver{
+    condition_variable* _uper;
+mutex* _uper_lock;
+//
+Mat* _input;
+//
+string Savepath
+//内部参数
+bool _iswork=false
+bool _islife=ture
+Mat _cache
+
+_workThread
+    int OnInit() override;
+    int OnPause() override;
+    int OnResume() override;
+    int OnUnload() override;
+    int Copy(){
+_input保存_cache
+    }
+
+        int SaveFrame(){
+        _cache保存bmp到Savepath,采用win丰富保存bmp,文件名称为当前时间戳
+    }
+
+    void Work(){
+        while (_islife) {
+        if (_iswork) {
+            wait.(uper)//等待上级广播
+            Copy()
+            (释放锁)
+            SaveFrame()
+            等待0.5s
+            
+}}}
+
+}

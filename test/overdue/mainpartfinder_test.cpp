@@ -16,11 +16,10 @@ void SetConsoleUTF8() {
 void DrawRectAndSave(const cv::Mat& src, const RECT& rect, const std::string& savePath) {
     cv::Mat dst = src.clone();
     
-    // 绘制矩形（绿色边框，粗细2像素）
     cv::rectangle(dst, 
                   cv::Point(rect.left, rect.top),
                   cv::Point(rect.right, rect.bottom),
-                  cv::Scalar(0, 255, 0, 255),  // BGRA绿色
+                  cv::Scalar(0, 255, 0, 255),
                   2);
     
     cv::imwrite(savePath, dst);
@@ -55,7 +54,6 @@ int main() {
     std::cout << "[Main] MainPartFinder 创建成功" << std::endl;
     
     // ---- 配置WinCapture ----
-    // 配置锁（生产者通知消费者）
     lock_config lockCfg;
     lockCfg.downer = &cv;
     lockCfg.downer_lock = &mtx;
@@ -63,7 +61,6 @@ int main() {
     lockCfg.uper_lock = nullptr;
     capture->ILock_config(lockCfg);
     
-    // 配置缓存（输出到img）
     cache_config cacheCfg;
     cacheCfg.input = nullptr;
     cacheCfg.output = &img;
@@ -72,7 +69,6 @@ int main() {
     std::cout << "[Main] WinCapture 配置完成" << std::endl;
     
     // ---- 配置MainPartFinder ----
-    // 配置锁（接收生产者通知）
     lock_config finderLockCfg;
     finderLockCfg.downer = nullptr;
     finderLockCfg.downer_lock = nullptr;
@@ -80,25 +76,23 @@ int main() {
     finderLockCfg.uper_lock = &mtx;
     finder->ILock_config(finderLockCfg);
     
-    // 配置缓存（输入从img读取，输出到resultRect）
     cache_config finderCacheCfg;
     finderCacheCfg.input = &img;
     finderCacheCfg.output = &resultRect;
     finder->ICache_config(finderCacheCfg);
     
+    // ---- 配置工作参数（cmd模式） ----
+    // cmd=1: 配置明度分割阈值 (light)
+    int ret = finder->IWroking_cofig(1, 100);
+    if (ret != 0) {
+        std::cout << "[Main] ❌ 配置light阈值失败，错误码: " << ret << std::endl;
+    }
     
-    // 配置工作参数（使用pair传参）
-    working_config workCfg;
-    workCfg.type = ConfigType::INT;
-    // 配置调试路径
-workCfg.type = ConfigType::STRING;
-workCfg.info = std::string("D:\\CodingPrograms\\Perception_Agent\\resource\\test");
-finder->IWroking_cofig(workCfg);
-    workCfg.info = std::make_pair<std::string, int>("light", 100);
-    finder->IWroking_cofig(workCfg);
-    
-    workCfg.info = std::make_pair<std::string, int>("num", 50);
-    finder->IWroking_cofig(workCfg);
+    // cmd=2: 配置边界筛选阈值 (num)
+    ret = finder->IWroking_cofig(2, 50);
+    if (ret != 0) {
+        std::cout << "[Main] ❌ 配置num阈值失败，错误码: " << ret << std::endl;
+    }
     
     std::cout << "[Main] MainPartFinder 配置完成" << std::endl;
     
@@ -121,10 +115,8 @@ finder->IWroking_cofig(workCfg);
     std::cout << "[Main] ✅ 获取到窗口: 0x" << std::hex << hwnd 
               << std::dec << " \"" << windowTitle << "\"" << std::endl;
     
-    // ---- 注入HWND到WinCapture ----
-    workCfg.type = ConfigType::HWND;
-    workCfg.info = hwnd;
-    int ret = capture->IWroking_cofig(workCfg);
+    // ---- 注入HWND到WinCapture（cmd模式） ----
+    ret = capture->IWroking_cofig(1, hwnd);
     if (ret != 0) {
         std::cout << "[Main] ❌ 注入HWND失败，错误码: " << ret << std::endl;
         delete capture;
@@ -133,15 +125,20 @@ finder->IWroking_cofig(workCfg);
         return -1;
     }
     
-    // 配置FPS
-    workCfg.type = ConfigType::FPS;
-    workCfg.info = 30;
-    capture->IWroking_cofig(workCfg);
+    // 配置FPS（cmd模式）
+    ret = capture->IWroking_cofig(2, 30);
+    if (ret != 0) {
+        std::cout << "[Main] ❌ 注入FPS失败，错误码: " << ret << std::endl;
+        delete capture;
+        delete finder;
+        system("pause");
+        return -1;
+    }
     std::cout << "[Main] ✅ 注入HWND和FPS完成" << std::endl;
     
     // ---- 启动WinCapture ----
     std::cout << "[Main] 启动 WinCapture..." << std::endl;
-    ret = capture->ILiveing_cmd(0);  // OnInit
+    ret = capture->ILiveing_cmd(0);
     if (ret != 0) {
         std::cout << "[Main] ❌ WinCapture启动失败，错误码: " << ret << std::endl;
         delete capture;
@@ -153,7 +150,7 @@ finder->IWroking_cofig(workCfg);
     
     // ---- 启动MainPartFinder ----
     std::cout << "[Main] 启动 MainPartFinder..." << std::endl;
-    ret = finder->ILiveing_cmd(0);  // OnInit
+    ret = finder->ILiveing_cmd(0);
     if (ret != 0) {
         std::cout << "[Main] ❌ MainPartFinder启动失败，错误码: " << ret << std::endl;
         capture->ILiveing_cmd(3);
@@ -174,7 +171,6 @@ finder->IWroking_cofig(workCfg);
     if (ret != 0) {
         std::cout << "[Main] ❌ 检测执行失败，错误码: " << ret << std::endl;
     } else {
-        // 等待异步完成（简单sleep）
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         
         std::cout << "[Main] ✅ 检测完成" << std::endl;
@@ -189,8 +185,8 @@ finder->IWroking_cofig(workCfg);
     
     // ---- 暂停所有工作 ----
     std::cout << "[Main] 暂停 WinCapture 和 MainPartFinder..." << std::endl;
-    capture->ILiveing_cmd(1);  // OnPause
-    finder->ILiveing_cmd(1);   // OnPause
+    capture->ILiveing_cmd(1);
+    finder->ILiveing_cmd(1);
     std::cout << "[Main] ✅ 已暂停" << std::endl;
     
     // ---- 保存原图 ----
@@ -215,8 +211,8 @@ finder->IWroking_cofig(workCfg);
     
     // ---- 清理资源 ----
     std::cout << "[Main] 清理资源..." << std::endl;
-    capture->ILiveing_cmd(3);  // OnUnload
-    finder->ILiveing_cmd(3);   // OnUnload
+    capture->ILiveing_cmd(3);
+    finder->ILiveing_cmd(3);
     
     delete capture;
     delete finder;
@@ -224,13 +220,9 @@ finder->IWroking_cofig(workCfg);
     
     // ---- 等待按键 ----
     std::cout << "\n========================================" << std::endl;
-    std::cout << "按 Enter 键退出... (或输入 'e' 再按 Enter 重新运行)" << std::endl;
+    std::cout << "按 Enter 键退出..." << std::endl;
     std::cout << "========================================" << std::endl;
     
-    char input = getchar();
-    if (input == 'e' || input == 'E') {
-        std::cout << "[Main] 重新运行... (请重新编译执行)" << std::endl;
-    }
-    
+    getchar();
     return 0;
 }

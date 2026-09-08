@@ -1,0 +1,151 @@
+//现在更加原子了,只对现有预制菜进行操作
+lass mainpartfinder:IWork{
+private:
+//配置类
+condition_variable* _downer;
+mutex* _downer_lock;
+//
+int _linght_threshold=100;//分割阈值
+int _num_threshold=50
+int _gape_time=60;//两帧最小间隔拿取时间
+
+//
+Mat* _input//和上级生产者的缓存队列,因为已经
+//协议锁了,所以直接读,严格释放锁变成原子操作
+RECT* _output
+
+//内部参数
+
+bool _iswork=false
+bool _islife=ture
+
+
+int _cur_cmd
+_workThread
+
+//自身响应锁
+condition_variable* _thiscv;
+mutex* _thismtx;
+//cache
+Mat _pre;//预留1920*1080*4
+Mat _cur;
+
+Mat _linght;//帧差cache
+
+//获得的已经是单通道二值图了
+int GetFrame(){
+    lock(_uper_lock)
+    wait(_uper的nos)
+    直接从_input拷贝到_per
+    .unlock
+    等待_gape_time ms
+    lock(_uper_lock)
+    wait(_uper的nos)
+    拷贝到_cur
+    .unlock
+    保存 Mat _pre;Mat _cur;,分别叫init1和2
+}
+
+int Framecut(){
+    Mat _pre和Mat _cur做帧差
+    帧差结果保存到Mat _linght
+    保存Mat _linght为cuntL
+
+}
+
+int Threshold(){
+    Mat _linght硬二分：大于_linght_threshold的设为0，小于等于_linght_threshold的设为1
+    二值图原地转化为0-225二值图保存为01二值图
+}
+int GetMain(){
+    Mat _linght
+    (py实现,阈值取_num_threshold
+        # x轴求和（每一列的白点数量，白点=1）
+    x_count = np.sum(img == 1, axis=0)  # shape: (w,)
+    
+    # y轴求和（每一行的白点数量，白点=1）
+    y_count = np.sum(img == 1, axis=1)  # shape: (h,)
+    
+    # 从高位遍历找第一个大于threshold的index (x_max)
+    x_max = -1
+    for i in range(w - 1, -1, -1):
+        if x_count[i] > threshold:
+            x_max = i
+            break
+    
+    # 从低位遍历找第一个大于threshold的index (x_min)
+    x_min = -1
+    for i in range(w):
+        if x_count[i] > threshold:
+            x_min = i
+            break
+    
+    # 从高位遍历找第一个大于threshold的index (y_max)
+    y_max = -1
+    for i in range(h - 1, -1, -1):
+        if y_count[i] > threshold:
+            y_max = i
+            break
+    
+    # 从低位遍历找第一个大于threshold的index (y_min)
+    y_min = -1
+    for i in range(h):
+        if y_count[i] > threshold:
+            y_min = i
+            break
+    
+    # 如果没找到有效边界，返回全图范围
+    if x_min == -1 or x_max == -1 or y_min == -1 or y_max == -1:
+        print(f"⚠️ 未找到有效主成分 (threshold={threshold})，返回全图")
+        return [0, 0, w-1, h-1])
+        最后结果转化为RECT
+        
+    最终打印rect在控制台
+}
+int Save(){
+    如果_output有效
+    返回到_output
+}
+
+    void Work(){
+        while (_islife) {
+        if (_iswork) {
+            wait.(_thiscv)//等待自身广播
+            switch(_cur_cmd){
+                case 1:{
+                    GetFrame()
+                    Framecut()
+                    Threshold()
+                    GetMain()
+                    Save()
+                }
+                case 0:等待50ms防止自身锁失效
+}
+
+
+
+
+    };}
+}
+
+
+
+
+int ILock_config(lock_config config) override;
+    int ICache_config(cache_config config) override;
+    int IWroking_cofig(int cmd, std::any config) {
+        switch(cmd){
+            case 1:if config==int{_light_threshold=config}
+            case 2:if config==int{_num_threshold=config}
+            case 3:if config==int{_gape_time=config}
+        }
+    }
+
+
+
+    int IWorking_cmd(int cmd, void* input, void* output) {
+        switch(cmd){
+            case 1:_cur_cmd=1,output link到_output
+        }
+        _thiscv.nos//广播
+    }

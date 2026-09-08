@@ -17,10 +17,23 @@
 //该死的DPI害的我调试几天
 //一定要记得把那个该死的DPI关了
 
-//简单win截屏类
+//不简单win截屏类
 // 输入配置:HWND,fps(自动转化)
-// 输出配置:cv::Mat
+// 输出:cv::Mat
 
+
+
+/*
+ * IWroking_cofig - 工作配置函数（cmd模式）
+ * 
+ * 命令列表：
+ *   cmd=1: 配置窗口句柄 (HWND)
+ *          config 类型: std::any 存储 HWND
+ *          示例: config = hwnd;  // HWND 类型
+ * 
+ *   cmd=2: 配置帧率 (FPS)
+ *          config 类型: std::any 存储 int
+ */   
 
 //
 // 初始化错误（11100-11199）
@@ -113,7 +126,7 @@ public:
     //配置槽函数
     int ILock_config(lock_config config) override;
     int ICache_config(cache_config config) override;
-    int IWroking_cofig(working_config config) override;
+    int IWroking_cofig(int cmd, std::any config) override;
 
     //命令槽函数
     int IWorking_cmd(int cmd, void* input, void* output) override;

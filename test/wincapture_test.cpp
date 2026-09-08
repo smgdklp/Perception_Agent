@@ -9,9 +9,6 @@
 #include <vector>
 
 bool SaveMatAsBmp(const std::string& filename, const cv::Mat& mat) {
-    // ❌ 删掉这行！不应该在这里调用
-    // SetProcessDPIAware();
-
     if (mat.empty() || mat.type() != CV_8UC4) {
         return false;
     }
@@ -58,7 +55,7 @@ void PrintMatInfo(const cv::Mat& mat) {
 }
 
 int main() {
-    // ✅ 关键修复：在程序最开头调用，且只调用一次
+    // ✅ 在程序最开头调用，且只调用一次
     SetProcessDPIAware();
 
     SetConsoleOutputCP(CP_UTF8);
@@ -83,6 +80,7 @@ int main() {
 
     WinCapture capture;
 
+    // ---- 配置锁 ----
     lock_config lc;
     lc.downer = &cv;
     lc.downer_lock = &mtx;
@@ -90,21 +88,33 @@ int main() {
     lc.uper_lock = nullptr;
     capture.ILock_config(lc);
 
+    // ---- 配置缓存 ----
     cache_config cc;
     cc.input = nullptr;
     cc.output = &img;
     capture.ICache_config(cc);
 
-    working_config wc;
-    wc.type = ConfigType::HWND;
-    wc.info = hwnd;
-    capture.IWroking_cofig(wc);
+    // ---- 配置工作参数（cmd模式） ----
+    // cmd=1: 配置HWND
+    int ret = capture.IWroking_cofig(1, hwnd);
+    if (ret != 0) {
+        std::cout << "[Main] ❌ 注入HWND失败，错误码: " << ret << std::endl;
+        system("pause");
+        return -1;
+    }
 
-    wc.type = ConfigType::FPS;
-    wc.info = 30;
-    capture.IWroking_cofig(wc);
+    // cmd=2: 配置FPS
+    ret = capture.IWroking_cofig(2, 30);
+    if (ret != 0) {
+        std::cout << "[Main] ❌ 注入FPS失败，错误码: " << ret << std::endl;
+        system("pause");
+        return -1;
+    }
 
-    int ret = capture.ILiveing_cmd(0);
+    std::cout << "[Main] ✅ 注入HWND和FPS完成" << std::endl;
+
+    // ---- 启动 ----
+    ret = capture.ILiveing_cmd(0);
     if (ret != 0) {
         std::cout << "[Main] ❌ 初始化失败: " << ret << std::endl;
         system("pause");
@@ -114,9 +124,11 @@ int main() {
     std::cout << "[Main] 运行 3 秒..." << std::endl;
     std::this_thread::sleep_for(std::chrono::seconds(3));
 
+    // ---- 暂停 ----
     capture.ILiveing_cmd(1);
     PrintMatInfo(img);
 
+    // ---- 保存 ----
     std::string path = "D:\\CodingPrograms\\Perception_Agent\\resource\\test\\test_final.bmp";
     if (SaveMatAsBmp(path, img)) {
         std::cout << "[Main] ✅ 保存: " << path << std::endl;
@@ -124,6 +136,7 @@ int main() {
         std::cout << "[Main] ❌ 保存失败" << std::endl;
     }
 
+    // ---- 卸载 ----
     capture.ILiveing_cmd(3);
     system("pause");
     return 0;

@@ -17,18 +17,40 @@ set(OpenCV_DIR "D:/CodingPrograms/Packages/opencv/build")
 find_package(OpenCV REQUIRED)
 
 # link源代码（主程序源文件 + 测试文件）
-set(SOURCES
+set(TEST_TARGET "2")  # 改这里切换
+
+# ---------- 公共源文件 ----------
+set(COMMON_SOURCES
     src/view/wincapture.cpp
-    #test/wincapture_test.cpp
-    test/mainpartfinder_test.cpp
     src/view/mainpartfinder.cpp
+    src/view/finalouter.cpp
 )
 
-set(HEADERS
+set(COMMON_HEADERS
     include/common.h
     include/wincapture.h
-    include/mainpartfinder.h  
+    include/mainpartfinder.h
+    include/finalouter.h
 )
+
+
+if(TEST_TARGET STREQUAL "1")
+    set(SOURCES ${COMMON_SOURCES} test/wincapture_test.cpp)
+    set(HEADERS ${COMMON_HEADERS})
+    set(TARGET_NAME "WinCapture_Test")
+elseif(TEST_TARGET STREQUAL "2")
+    set(SOURCES ${COMMON_SOURCES} test/viewpart_text.cpp)
+    set(HEADERS ${COMMON_HEADERS})
+    set(TARGET_NAME "WinCapture_Test")
+
+
+
+#elseif(TEST_TARGET STREQUAL "2")
+#    set(SOURCES ${COMMON_SOURCES} test/mainpartfinder_test.cpp)
+#    set(HEADERS ${COMMON_HEADERS})
+#    set(TARGET_NAME "MainPartFinder_Test")
+
+endif()
 
 # 生成可执行文件
 add_executable(Perception_Agent ${SOURCES} ${HEADERS})

@@ -1,7 +1,25 @@
-//一个简单通过连续帧来提取窗口运动区域的类
-//采用转化为明度二值图，简单帧差，最后每行阈值提取边界
-//因为界面问题，外界自己复验结果(((())))
+//现在更加原子了，只对现有预制菜进行操作
 
+// 输入配置:_light_threshold分割阈值， _num_threshold边界筛选阈值，_gape_time间隔时间
+// 输出:RECT
+/*
+ * IWroking_cofig - 工作配置函数（cmd模式）
+ *
+ * 命令列表：
+ *   cmd=1: 配置明度分割阈值 (light)
+ *          config 类型: std::any 存储 int
+ *          示例: config = 100;   // 默认值100
+ *
+ *   cmd=2: 配置边界筛选阈值 (num)
+ *          config 类型: std::any 存储 int
+ *          示例: config = 50;    // 默认值50
+ *
+ *   cmd=3: 配置两帧间隔时间 (gape)
+ *          config 类型: std::any 存储 int
+ *          示例: config = 60;    // 默认值60ms
+ *
+
+ */
 #pragma once
 
 #include "common.h"
@@ -14,8 +32,9 @@
 #include <condition_variable>
 #include <mutex>
 
-
-
+// ============================================================
+// 错误码集合（MainPartFinder专用）
+// ============================================================
 // 初始化错误（12100-12199）
 // 12101 - 初始化-输入Mat无效
 // 12102 - 初始化-输出RECT无效
@@ -25,6 +44,7 @@
 // 12201 - 处理-帧差失败
 // 12202 - 处理-二值化失败
 // 12203 - 处理-边界提取失败
+// 12204 - 处理-获取帧失败
 //
 // 线程错误（12300-12399）
 // 12301 - 线程-创建失败
@@ -42,6 +62,7 @@ private:
 
     int _light_threshold;       // 分割阈值，默认100
     int _num_threshold;         // 边界筛选阈值，默认50
+    int _gape_time;             // 两帧最小间隔拿取时间，默认60ms
 
     // ====== 共享内存 ======
     cv::Mat* _input;            // 和上级生产者的缓存队列
@@ -62,14 +83,13 @@ private:
     cv::Mat _pre;               // 预留1920*1080*4
     cv::Mat _cur;
     cv::Mat _light;             // 帧差cache
-    RECT _persize;
 
     // ====== 内部工作函数 ======
-    int GetFrame();             // 拷贝
-    int TurnL();                // 转化为二值图
+    int GetFrame();             // 拷贝两帧
     int Framecut();             // 帧差
     int Threshold();            // 硬二分
     int GetMain();              // 提取主区域边界
+    int Save();                 // 保存到_output
 
     // ====== 主线循环 ======
     void Work();
@@ -91,7 +111,7 @@ public:
     // ====== 配置槽函数 ======
     int ILock_config(lock_config config) override;
     int ICache_config(cache_config config) override;
-    int IWroking_cofig(working_config config) override;
+    int IWroking_cofig(int cmd, std::any config) override;
 
     // ====== 命令槽函数 ======
     int IWorking_cmd(int cmd, void* input, void* output) override;

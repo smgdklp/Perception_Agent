@@ -325,26 +325,31 @@ int WinCapture::ICache_config(cache_config config) {
     return 0;
 }
 
-int WinCapture::IWroking_cofig(working_config config) {
-    if (config.type == ConfigType::HWND) {
-        auto* p = std::any_cast<HWND>(&config.info);
+
+int WinCapture::IWroking_cofig(int cmd, std::any config) {
+    switch (cmd) {
+    case 1: {  // 配置窗口句柄
+        auto* p = std::any_cast<HWND>(&config);
         if (p) {
             _hwnd = *p;
         } else {
-            return 11004;
+            return 11004;  // 类型不匹配
         }
-    } else if (config.type == ConfigType::FPS) {
-        auto* p = std::any_cast<int>(&config.info);
+        return 0;
+    }
+    case 2: {  // 配置帧率
+        auto* p = std::any_cast<int>(&config);
         if (p && *p > 0) {
             _fps = *p;
             _intervalMs = 1000 / _fps;
         } else {
-            return 11010;
+            return 11010;  // 参数越界
         }
-    } else {
-        return 11004;
+        return 0;
     }
-    return 0;
+    default:
+        return 11001;  // 未知命令
+    }
 }
 
 int WinCapture::IWorking_cmd(int cmd, void* input, void* output) {

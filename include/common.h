@@ -5,6 +5,8 @@
 #include <any>
 #include <cstdint>
 
+//
+
 
 //基本生产组件类配置模板
 //锁配置，传递锁索引
@@ -27,18 +29,9 @@ struct cache_config {
 };
 
 //配置传输协议
-enum class ConfigType : uint8_t {
-    HWND = 1,
-    FPS = 2,
-    MAT = 3,
-    STRING = 4,
-    INT = 5
-};
 
-struct working_config {
-    ConfigType type;
-    std::any info;
-};
+
+
 
 //基本生产组件的模板类
 //包含三个配置注入函数接口
@@ -64,7 +57,7 @@ public:
     //！！！配置槽函数
     virtual int ILock_config(lock_config config) = 0;
     virtual int ICache_config(cache_config config) = 0;
-    virtual int IWroking_cofig(working_config config) = 0;
+    virtual int IWroking_cofig(int cmd, std::any config) = 0;
 
     //命令槽函数
     virtual int ILiveing_cmd(int cmd) {

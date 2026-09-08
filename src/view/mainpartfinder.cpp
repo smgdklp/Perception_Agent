@@ -7,7 +7,8 @@ MainPartFinder::MainPartFinder()
     , _uper(nullptr)
     , _uper_lock(nullptr)
     , _light_threshold(100)
-    , _num_threshold(50)
+    , _num_threshold(100)
+    , _gape_time(60)
     , _input(nullptr)
     , _output(nullptr)
     , _iswork(false)
@@ -15,7 +16,6 @@ MainPartFinder::MainPartFinder()
     , _cur_cmd(0)
     , _thiscv(nullptr)
     , _thismtx(nullptr) {
-    _persize = {0, 0, 0, 0};
 }
 
 MainPartFinder::~MainPartFinder() {
@@ -24,7 +24,6 @@ MainPartFinder::~MainPartFinder() {
     }
 }
 
-// 拷贝
 int MainPartFinder::GetFrame() {
     if (!_input) {
         return 12101;
@@ -37,8 +36,8 @@ int MainPartFinder::GetFrame() {
         _pre = _input->clone();
     }
 
-    // 等待60ms
-    std::this_thread::sleep_for(std::chrono::milliseconds(60));
+    // 等待_gape_time ms
+    std::this_thread::sleep_for(std::chrono::milliseconds(_gape_time));
 
     // lock(_uper_lock) wait(_uper的nos) 拷贝到_cur
     if (_uper && _uper_lock) {
@@ -50,25 +49,12 @@ int MainPartFinder::GetFrame() {
     return 0;
 }
 
-// 转化为二值图
-int MainPartFinder::TurnL() {
-    if (_pre.empty() || _cur.empty()) {
-        return 12202;
-    }
-
-    // 两帧直接在原对象转化为单通道灰度图
-    cv::cvtColor(_pre, _pre, cv::COLOR_BGRA2GRAY);
-    cv::cvtColor(_cur, _cur, cv::COLOR_BGRA2GRAY);
-
-    return 0;
-}
-
 int MainPartFinder::Framecut() {
     if (_pre.empty() || _cur.empty()) {
         return 12201;
     }
 
-    // 做帧差
+    // 两帧直接做帧差（已经是灰度图）
     cv::absdiff(_pre, _cur, _light);
 
     return 0;
@@ -155,16 +141,13 @@ int MainPartFinder::GetMain() {
 
     // 如果没找到有效边界，返回全图范围
     if (x_min == -1 || x_max == -1 || y_min == -1 || y_max == -1) {
-        std::cout << "[MainPartFinder] ⚠️ 未找到有效主成分 (threshold=" 
+        std::cout << "[MainPartFinder] ⚠️ 未找到有效主成分 (threshold="
                   << threshold << ")，返回全图" << std::endl;
-        _output->left = 0;
-        _output->top = 0;
-        _output->right = w - 1;
-        _output->bottom = h - 1;
-        return 0;
+        // 直接操作_output，Save时会保存
+        return 12203;
     }
 
-    // 结果转化为RECT返回到_output
+    // 结果暂存到成员变量，Save时输出
     _output->left = x_min;
     _output->top = y_min;
     _output->right = x_max;
@@ -182,10 +165,31 @@ int MainPartFinder::GetMain() {
     return 0;
 }
 
-// 主线循环
+int MainPartFinder::Save() {
+    if (!_output) {
+        return 12102;
+    }
+
+    // 如果_output已被GetMain填充，直接返回成功
+    // 如果GetMain返回全图，这里需要设置全图范围
+    if (_output->left == 0 && _output->top == 0 &&
+        _output->right == 0 && _output->bottom == 0) {
+        // 如果light为空，无法获取尺寸
+        if (_light.empty()) {
+            return 12203;
+        }
+        _output->left = 0;
+        _output->top = 0;
+        _output->right = _light.cols - 1;
+        _output->bottom = _light.rows - 1;
+    }
+
+    return 0;
+}
+
 void MainPartFinder::Work() {
     while (_islife) {
-        // wait(_thismtx) 等待自身函数调用
+        // wait(_thiscv) 等待自身广播
         if (_thiscv && _thismtx) {
             std::unique_lock<std::mutex> lock(*_thismtx);
             _thiscv->wait(lock, [this]() { return _cur_cmd != 0 || !_islife; });
@@ -195,50 +199,73 @@ void MainPartFinder::Work() {
 
         if (_iswork) {
             switch (_cur_cmd) {
-            case 1:
-                GetFrame();
-                TurnL();
-                Framecut();
-                Threshold();
-                GetMain();
+            case 1: {
+                int ret = GetFrame();
+                if (ret != 0) {
+                    std::cout << "[MainPartFinder] GetFrame失败: " << ret << std::endl;
+                    break;
+                }
+                ret = Framecut();
+                if (ret != 0) {
+                    std::cout << "[MainPartFinder] Framecut失败: " << ret << std::endl;
+                    break;
+                }
+                ret = Threshold();
+                if (ret != 0) {
+                    std::cout << "[MainPartFinder] Threshold失败: " << ret << std::endl;
+                    break;
+                }
+                ret = GetMain();
+                if (ret != 0) {
+                    std::cout << "[MainPartFinder] GetMain失败: " << ret << std::endl;
+                    // 不break，继续Save保存全图
+                }
+                ret = Save();
+                if (ret != 0) {
+                    std::cout << "[MainPartFinder] Save失败: " << ret << std::endl;
+                    break;
+                }
 
-                // 如果存在downer，就通知下一级
+                // 如果存在downer，通知下一级
                 if (_downer && _downer_lock) {
                     std::lock_guard<std::mutex> lock(*_downer_lock);
                     _downer->notify_one();
                 }
                 break;
+            }
             case 0:
-                // sleep(60) 细节睡一下再pass防止锁失效
-                std::this_thread::sleep_for(std::chrono::milliseconds(60));
+                // 等待50ms防止自身锁失效
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
                 break;
             default:
                 break;
             }
         }
 
-        _cur_cmd = 0;  // 细节复位函数
+        _cur_cmd = 0;  // 复位
     }
 }
 
-// 必备生命周期函数
 int MainPartFinder::OnInit() {
-    // 检查环境是否完全，只检验上层指针是否有效
+    // 检查环境是否完全
     if (!_input) {
         return 12101;
     }
     if (!_output) {
         return 12102;
     }
+    if (!_uper || !_uper_lock) {
+        return 12103;
+    }
 
-    // new condition_variable* _thiscv; mutex* _thismtx; 作为自身被动响应的锁对象
+    // 创建自身响应锁
     _thiscv = new std::condition_variable();
     _thismtx = new std::mutex();
 
     _iswork = true;
     _islife = true;
 
-    // 创立线程Work运行
+    // 启动工作线程
     if (_workThread.joinable()) {
         return 12302;
     }
@@ -302,7 +329,6 @@ int MainPartFinder::OnUnload() {
     return 0;
 }
 
-// 缓存到condition_variable* _downer; mutex* _downer_lock; condition_variable* _uper; mutex* _uper_lock;
 int MainPartFinder::ILock_config(lock_config config) {
     if (config.downer) {
         _downer = config.downer;
@@ -319,7 +345,6 @@ int MainPartFinder::ILock_config(lock_config config) {
     return 0;
 }
 
-// 缓存指针索引到_output和_input
 int MainPartFinder::ICache_config(cache_config config) {
     if (config.input) {
         _input = reinterpret_cast<cv::Mat*>(config.input);
@@ -330,37 +355,55 @@ int MainPartFinder::ICache_config(cache_config config) {
     return 0;
 }
 
-// 设计缺陷问题，只能采用单字典对来赋值
-int MainPartFinder::IWroking_cofig(working_config config) {
-    if (config.type == ConfigType::INT) {
-        try {
-            auto kv = std::any_cast<std::pair<std::string, int>>(config.info);
-            if (kv.first == "num") {
-                _num_threshold = kv.second;
-            } else if (kv.first == "light") {
-                _light_threshold = kv.second;
-            } else {
-                return 11004;
-            }
-        } catch (const std::bad_any_cast&) {
-            return 11004;
+
+int MainPartFinder::IWroking_cofig(int cmd, std::any config) {
+    switch (cmd) {
+    case 1: {  // 配置明度分割阈值 (light)
+        auto* p = std::any_cast<int>(&config);
+        if (p && *p > 0 && *p < 255) {
+            _light_threshold = *p;
+        } else {
+            return 11010;  // 参数越界
         }
-    } else {
-        return 11004;
+        return 0;
     }
-    return 0;
+    case 2: {  // 配置边界筛选阈值 (num)
+        auto* p = std::any_cast<int>(&config);
+        if (p && *p > 0) {
+            _num_threshold = *p;
+        } else {
+            return 11010;  // 参数越界
+        }
+        return 0;
+    }
+    case 3: {  // 配置两帧间隔时间 (gape)
+        auto* p = std::any_cast<int>(&config);
+        if (p && *p > 0) {
+            _gape_time = *p;
+        } else {
+            return 11010;  // 参数越界
+        }
+        return 0;
+    }
+    default:
+        return 11001;  // 未知命令
+    }
 }
 
-// cmd:1，执行一次主区域提取
 int MainPartFinder::IWorking_cmd(int cmd, void* input, void* output) {
     switch (cmd) {
-    case 1:
+    case 1: {
+        // 如果传入了output，link到_output
+        if (output) {
+            _output = reinterpret_cast<RECT*>(output);
+        }
         _cur_cmd = 1;
-        // 释放自身响应锁
+        // 广播自身响应锁
         if (_thiscv && _thismtx) {
             _thiscv->notify_one();
         }
         return 0;
+    }
     default:
         return 11001;
     }

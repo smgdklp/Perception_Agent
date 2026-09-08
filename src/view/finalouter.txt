@@ -1,0 +1,101 @@
+
+//!!!!!!!!!注意!!!!!!!!!!!!!!!
+//RECT作为状态成员函数!!!!!!!!!!
+//修改的时候要暂停工作
+
+//简单图像输出终端
+//因为包含裁剪图像,所以最终统一输出为
+//二值图和一个偏置坐标
+
+
+//统一图像最终输出对象
+//输入:RECT,Mat原始图像
+//输出:Mat二值的裁剪图
+
+
+class finaloutput{
+    private:
+    
+    //配置类
+condition_variable* _downer;
+mutex* _downer_lock;
+
+condition_variable* _uper;
+mutex* _uper_lock;
+//
+RECT _offset={0,0,0,0}//裁剪区域
+int _light_threshold;       // 分割阈值，默认100
+
+//
+Mat* _input;
+Mat* _output;
+
+//内部参数
+bool _iswork=false
+bool _islife=ture
+//当前偏置
+
+_workThread
+
+//cache
+Mat _cache
+Mat _cut_cache
+
+
+
+
+
+
+    int OnInit() override;
+    int OnPause() override;
+    int OnResume() override;
+    int OnUnload() override;
+
+
+    int SaveFrame(){
+        _input拷贝到_cache
+    }
+    int Cut(){
+        _cache按照_offset划定的位置裁剪到_cut_cache
+        如果RECT={0,0,0,0}直接拷贝
+        如果RECT出界则报错
+    }
+    int TurnL(){
+        _cut_cache接在原对象转化为,单通道灰度图
+    }
+
+    int Save(){
+        如果_output有效,则把_cut_cache直接拷贝过去
+    }
+
+
+    void Work(){
+        while (_islife) {
+        if (_iswork) {
+            wait.(uper)//等待上级广播
+            SaveFrame()
+            (释放锁)
+            TurnL()
+            if (condition_variable* _downer;
+mutex* _downer_lock;存在且有效){
+            Save()
+            _downer.notify();//向下广播
+}
+
+
+
+
+    };}
+}
+int ILock_config(lock_config config) override;
+    int ICache_config(cache_config config) override;
+    int IWroking_cofig(int cmd, std::any config) {
+        switch(cmd){
+            case 1:if config==int{_light_threshold=config}
+            case 2:if config==RECT{_offset=config}
+        }
+    }
+
+    //命令槽函数
+    int IWorking_cmd(int cmd, void* input, void* output) override;
+}
